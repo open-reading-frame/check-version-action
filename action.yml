@@ -1,0 +1,39 @@
+name: check-version
+description: Assert repo version was bumped if a git diff implies it should have been
+
+inputs:
+  json:
+    description: Path to metadata JSON file containing version
+    default: repo-data.json
+  include-paths:
+    description: Directories, file paths, or wildcards that when changed should incur a version bump
+    default: null
+  exclude-paths:
+    description: Directories, file paths, or wildcards that should be excluded from the diff check, taking priority over include-paths
+    default: null
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout calling repo
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: Pull tags down
+      shell: bash
+      run: git fetch origin --tags
+    - name: Install orf_utils
+      uses: open-reading-frame/setup-python-action@main
+      with:
+        packages: orf_utils
+    - name: Run check_version with given arguments
+      shell: bash
+      run: |
+        check_version \
+          -j ${{ inputs.json }} \
+          -s ${{ github.token }} \
+          -p ${{ github.event.number }} \
+          -r ${{ github.event.repository.name }} \
+          -o ${{ github.repository_owner }} \
+          -i ${{ inputs.include-paths }} \
+          -e ${{ inputs.exclude-paths }}
